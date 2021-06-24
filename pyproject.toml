@@ -1,8 +1,12 @@
 [tool.poetry]
 name = "baseport"
-version = "0.1.0"
+version = "0.1.1"
 description = "Export Basecamp 3 To-Dos into a CSV."
 authors = ["Nate Gadzhi <nate@respawn.io>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/nategadzhi/baseport"
+
 
 [tool.poetry.dependencies]
 python = "^3.8"
