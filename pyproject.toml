@@ -8,6 +8,7 @@ authors = ["Nate Gadzhi <nate@respawn.io>"]
 python = "^3.8"
 basecampy3 = "^0.4.0"
 click = "^8.0.1"
+html2text = "^2020.1.16"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
