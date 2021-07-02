@@ -1,19 +1,17 @@
-import click
-import csv
-import json
-
 from typing import Union
 
-from basecampy3 import Basecamp3
-from basecampy3.exc import NoDefaultConfigurationFound
-from html2text import html2text
+from .comments import Comments
+from .util import *
+
+from pprint import pprint
+
+import click
 
 # Type alias for CLi command result: may be an exit code or none
 CommandResult = Union[int, None]
 
-
 @click.group(help="Baseport exports Basecamp 3 to-do lists to CSVs.")
-def cli(ctx):
+def cli():
     pass
 
 
@@ -33,7 +31,7 @@ def projects_ls() -> CommandResult:
     CLI command to list all projects in a Basecamp3 account.
     `baseport projects ls`
     """
-    bc3 = _create_basecamp_client()
+    bc3 = create_basecamp_client()
     if bc3 is None:
         return 1
 
@@ -45,7 +43,11 @@ def projects_ls() -> CommandResult:
 @todos.command(name="ls", help="List all available to-do lists in a project")
 @click.option("-p", "--project", "project_id", required=True, help="Project ID", type=int)
 def todos_ls(project_id: int) -> CommandResult:
-    bc3 = _create_basecamp_client()
+    """
+    CLI command to list all to-to lists in a project.
+    `baseport todos ls --project PROJECT_ID`
+    """
+    bc3 = create_basecamp_client()
     if bc3 is None:
         return 1
 
@@ -61,18 +63,18 @@ def todos_ls(project_id: int) -> CommandResult:
 @click.option("-p", "--project", "project_id", required=True, help="Project ID", type=int)
 @click.option("-l", "--list", "list_id", help="To-do list ID", type=int)
 def todos_show(project_id: int, list_id: int) -> CommandResult:
-    bc3 = _create_basecamp_client()
+    """
+    CLI command to show all the to-dos in a particular project, in one or all to-do lists.
+    `baseport todos show --project PROJECT_ID --list LIST_ID`
+    """
+    bc3 = create_basecamp_client()
     if bc3 is None:
         return 1
 
     project = bc3.projects.get(project_id)
     todoset = project.todoset
 
-    if list_id is not None:
-        lists = [todoset.get(list_id)]
-    else:
-        lists = list(todoset.list())
-
+    lists = [todoset.get(list_id)] if list_id is not None else list(todoset.list())
     click.echo(f"To-dos from {len(lists)} to-do lists:")
 
     for todolist in lists:
@@ -100,7 +102,7 @@ def todos_show(project_id: int, list_id: int) -> CommandResult:
     default="default",
 )
 def todos_export(project_id: int, list_id: int, out: str, formatter: str) -> CommandResult:
-    bc3 = _create_basecamp_client()
+    bc3 = create_basecamp_client()
     if bc3 is None:
         return 1
 
@@ -117,76 +119,11 @@ def todos_export(project_id: int, list_id: int, out: str, formatter: str) -> Com
         for group in todolist.list_groups():
             todos.extend(group._endpoint._api.todolists.get(todolist=group).list())
 
+    # print(list(todos[0].comments())[1]._values['content'])
+
     # Preprocess todos for export
-    todos = _format_todos(todos, formatter)
-    _export_todos_to_csv(out, todos)
-
-
-def _create_basecamp_client() -> Union[Basecamp3, None]:
-    """
-    Creates a Basecampy3 client object with the default configuration
-    and returns it. Wrapped around with a better error handling.
-    """
-    try:
-        return Basecamp3()
-    except NoDefaultConfigurationFound:
-        click.echo(
-            f"""\
-        Baseport needs Basecamp3 API authentication tokens to work, and the config file with them wasn't found.
-
-        Running `bc3 configure` will start a Basecamp3 API configuration wizard that will guide you through the setup process.
-        Read more here: https://github.com/phistrom/basecampy3#install
-        """
-        )
-        return None
-
-
-def _export_todos_to_csv(out: str, todos: list) -> None:
-    """
-    Writes the to-dos into a csv file.
-    """
-    with open(out, "w", newline="") as csvfile:
-        csvout = csv.writer(csvfile)
-
-        # Write header row with keys of the dict
-        csvout.writerow(todos[0]._values.keys())
-        for todo in todos:
-            csvout.writerow(todo._values.values())
-
-
-def _format_todos(todos: list, formatter: str) -> list:
-    """
-    Formats the list of TODOs with a formatter of choice and returns the list.
-    Accepts the list of todos in Basecampy3 format only.
-    Currently only works with default or Zipline formatters.
-    """
-    if formatter == "zipline":
-        return _format_todos_zipline(todos)
-    else:
-        return todos
-
-
-def _format_todos_zipline(todos: list) -> list:
-    for todo in todos:
-        todo._values["creator"] = todo._values["creator"]["email_address"].replace("retailzipline.com", "zipline.inc")
-        assignees = todo._values["assignees"]
-
-        # Set the first assignee as the assignee on Jira export.
-        # Clean up empty arrays, or they'll error out later.
-        if len(assignees) != 0:
-            todo._values["assignees"] = assignees[0]["email_address"].replace("retailzipline.com", "zipline.inc")
-        else:
-            todo._values["assignees"] = ""
-
-        todo._values[
-            "description"
-        ] = f"""\
-This issue has been imported from Basecamp automatically. [Here's the original Basecamp To-do!]({todo._values["app_url"]})
-
-{html2text(todo._values["description"])}
-        """
-    return todos
-
+    todos = format_todos(todos, formatter)
+    export_todos_to_csv(out, todos)
 
 if __name__ == "__main__":
     cli()
