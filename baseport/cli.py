@@ -10,6 +10,7 @@ import click
 # Type alias for CLi command result: may be an exit code or none
 CommandResult = Union[int, None]
 
+
 @click.group(help="Baseport exports Basecamp 3 to-do lists to CSVs.")
 def cli():
     pass
@@ -124,6 +125,7 @@ def todos_export(project_id: int, list_id: int, out: str, formatter: str) -> Com
     # Preprocess todos for export
     todos = format_todos(todos, formatter)
     export_todos_to_csv(out, todos)
+
 
 if __name__ == "__main__":
     cli()

@@ -9,6 +9,7 @@ from basecampy3.exc import NoDefaultConfigurationFound
 from html2text import html2text
 from bs4 import BeautifulSoup
 
+
 def create_basecamp_client() -> Union[Basecamp3, None]:
     """
     Creates a Basecampy3 client object with the default configuration
@@ -52,6 +53,7 @@ def format_todos(todos: list, formatter: str) -> list:
     else:
         return todos
 
+
 def zipline_replace_mentions(content: str) -> str:
     """Replaces Basecamp-style mentions in an HTML string and returns an HTML string."""
     soup = BeautifulSoup(content, "html.parser")
@@ -65,8 +67,10 @@ def zipline_replace_mentions(content: str) -> str:
 
     return str(soup)
 
+
 def zipline_user_email(user: dict) -> str:
     return f"**@{user['email_address'].replace('retailzipline.com', 'zipline.inc')}**"
+
 
 def zipline_format_todos(todos: list) -> list:
     for todo in todos:
@@ -80,7 +84,10 @@ def zipline_format_todos(todos: list) -> list:
         else:
             todo._values["assignees"] = ""
 
-        comments = [f"{zipline_user_email(c._values['creator'])}: {html2text(zipline_replace_mentions(c._values['content']))}" for c in list(todo.comments())]
+        comments = [
+            f"{zipline_user_email(c._values['creator'])}: {html2text(zipline_replace_mentions(c._values['content']))}"
+            for c in list(todo.comments())
+        ]
         comments = "\n".join(comments)
 
         todo._values[
